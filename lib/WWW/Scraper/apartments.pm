@@ -1,13 +1,13 @@
 
-package WWW::Search::Scraper::apartments;
+package WWW::Scraper::apartments;
 
 use strict;
 use vars qw($VERSION @ISA);
-@ISA = qw(WWW::Search::Scraper);
-$VERSION = sprintf("%d.%02d", q$Revision: 1.11 $ =~ /(\d+)\.(\d+)/);
-use WWW::Search::Scraper::Response;
+@ISA = qw(WWW::Scraper);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/);
+use WWW::Scraper::Response;
 
-use WWW::Search::Scraper(qw(1.48));
+use WWW::Scraper(qw(1.48 trimLFs));
 
 # SAMPLE 
 # http://www.apartments.com/search/oasis.dll?mfcisapicommand=quicksearch&QSearchType=1&city=New%20York&state=NY&numbeds=0&minrnt=0&maxrnt=9999
@@ -37,58 +37,44 @@ my $scraperRequest =
 my $scraperFrame =
 [ 'HTML', 
   [ 
-      [ 'COUNT', '<strong>Matches: (\d+)</strong>' ]
-     ,[ 'NEXT', 2, \&getNextPage ]
-     ,[ 'BODY', '<form action="oasis.dll" method="GET" name="Form1">', undef,      # There are two forms in this
-         [ [ 'BODY', '<form action="oasis.dll" method="GET" name="Form1">', undef, #  result, by the same name!
-              [  
-                [ 'TABLE', '#0',
-                   [
-                      [ 'TR' ] # "Visual Listings".
-                     ,[ 'HIT*' ,
-                        [ [ 'TR', 
-                             [
-                                [ 'TD' ,
-                                    [  [ 'TABLE',  # the first sub-table is the visual image, et.al.
-                                         [ 
-                                             [ 'TR' ] # hmmm . . .
-                                            ,[ 'TR' ] # hmmm . . .
-                                            ,[ 'TR' ] # anchor to visual tour
-                                       ] ]
-                                    ]
-                                ]
-                               ,[ 'TD',
-                                   [
-                                      [ 'TABLE',
-                                        [
-                                          [ 'TR',
-                                            [
-                                               [ 'TD', [ [ 'A', 'url', 'title' ] ] ]
-                                              ,[ 'TD', 'price' ]
-                                              ,[ 'RESIDUE', 'location' ]
-                                            ]
-                                         ,[ 'TR' ] # ???
-                                         ,[ 'TR',
-                                           ,[ 'TD', 'description' ]
-                                          ]
-                                         ,[ 'TR' ] # this row contains anchors to images illustrating the apartment's features.
-                                        ]
-                                     ]
-                                   ]
-                                 ]
-                               ]
-                            ]
-                          ]
-                         ,[ 'TR' ] # this row contains a horizontal rule separating each result.
-                        ]
+     [ 'COUNT', '<strong>Matches: (\d+)</strong>' ]
+    ,[ 'NEXT', 2, \&getNextPage ]
+    ,[ 'TABLE', '#2',
+    [[ 'TABLE', '#9',
+       [
+          [ 'TABLE' ] # "Visual Listings".
+         ,[ 'HIT*' ,[
+            ['TABLE', [           
+             [ 'TR' ] # Spacers
+            ,[ 'TR', 
+                 [
+                   [ 'TD', [
+                         [ 'A', 'contactUrl', undef ]
+                        ,[ 'RESIDUE', 'phoneNumber', \&trimLFs ]
                       ]
                    ]
-                ] 
+                  ,[ 'TD' ] # Spacer 
+                  ,[ 'TD', [
+                         [ 'A', 'locationUrl', 'location' ]
+                        ,[ 'TAG', 'STRONG', 'address', \&trimLFs ]
+                        ,[ 'A', 'moreInfoUrl', undef]
+                        ,[ 'RESIDUE', 'descripition', \&trimLFs ]
+                      ]
+                   ]
+                  ,['TD', 'city', \&trimLFs]
+                  ,['TD', 'price', \&trimLFs]
+                ]
               ]
+             ,['TR'] # This row has some sort of "amenities" coding.
            ]
-        ] 
-    ] 
-  ]
+         ]
+       ]
+     ]
+   ]
+]
+]
+] 
+] 
 ];
 
 
@@ -129,13 +115,13 @@ sub getNextPage {
 
 =head1 NAME
 
-WWW::Search::Scraper::apartments - Scrapes www.apartments.com
+WWW::Scraper::apartments - Scrapes www.apartments.com
 
 
 =head1 SYNOPSIS
 
-    require WWW::Search::Scraper;
-    $search = new WWW::Search::Scraper('apartments');
+    require WWW::Scraper;
+    $search = new WWW::Scraper('apartments');
 
 
 =head1 DESCRIPTION
@@ -155,10 +141,10 @@ To do
 
 =head1 AUTHOR
 
-C<WWW::Search::apartments> is written and maintained
+C<WWW::apartments> is written and maintained
 by Glenn Wood, http://search.cpan.org/search?mode=author&query=GLENNWOOD.
 
-The best place to obtain C<WWW::Search::apartments>
+The best place to obtain C<WWW::apartments>
 is from Glenn's releases on CPAN. Because www.apartments.com
 sometimes changes its format in between his releases, 
 sometimes more up-to-date versions can be found at
